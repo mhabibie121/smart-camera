@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Putar ulang · Smart Camera</title>
+  <link rel="icon" type="image/svg+xml" href="/img/logo.svg">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="pb-body">
+  <header class="topbar">
+    <span class="brand"><img class="brand-logo" src="/img/logo.svg" alt=""><span>Smart Camera</span><span class="brand-sub">Putar ulang</span></span>
+    <a class="btn" href="/">← Live view</a>
+    <span class="spacer"></span>
+    <span class="user" id="userInfo"></span>
+  </header>
+
+  <div class="pb">
+    <aside class="pb-side">
+      <input type="search" id="pbSearch" placeholder="Cari kamera...">
+      <div class="pb-cams" id="pbCams"><div class="muted small">Memuat…</div></div>
+      <div class="pb-list-head">Daftar rekaman <span class="muted small" id="pbListInfo"></span></div>
+      <div class="pb-list" id="pbList"><div class="muted small">Pilih kamera dulu.</div></div>
+    </aside>
+
+    <main class="pb-main">
+      <div class="pb-head">
+        <b id="pbCamName">Pilih kamera di kiri</b>
+        <div class="btn-group" id="pbQuality"></div>
+        <span class="spacer"></span>
+        <button id="pbPrevDay" title="Hari sebelumnya">◀</button>
+        <div class="pb-datewrap">
+          <button id="pbDateBtn" title="Pilih tanggal (titik = ada rekaman)">📅 <span id="pbDateText"></span></button>
+          <div class="pb-cal" id="pbCal" hidden>
+            <div class="pb-cal-head">
+              <button id="pbCalPrev" title="Bulan sebelumnya">◀</button>
+              <b id="pbCalTitle"></b>
+              <button id="pbCalNext" title="Bulan berikutnya">▶</button>
+            </div>
+            <div class="pb-cal-grid" id="pbCalGrid"></div>
+            <div class="pb-cal-legend"><span><i class="cl-dot"></i>Ada rekaman</span><span><i class="cl-sel"></i>Dipilih</span><span><i class="cl-today"></i>Hari ini</span></div>
+            <div class="pb-cal-foot muted small" id="pbCalInfo"></div>
+          </div>
+        </div>
+        <button id="pbNextDay" title="Hari berikutnya">▶</button>
+      </div>
+
+      <div class="pb-video">
+        <video id="pbVideo" controls playsinline muted></video>
+        <div class="pb-clock" id="pbClock"></div>
+        <div class="pb-note" id="pbNote" hidden></div>
+        <div class="pb-msg" id="pbMsg">Pilih kamera, lalu klik di timeline untuk memutar rekaman.</div>
+      </div>
+
+      <div class="pb-zoombar">
+        <span class="muted">Skala</span>
+        <div class="btn-group" id="pbZoom">
+          <button data-span="86400" class="active">24 jam</button><button data-span="21600">6 jam</button>
+          <button data-span="3600">1 jam</button><button data-span="900">15 mnt</button>
+        </div>
+        <button id="pbPanLeft" title="Geser ke kiri">◀</button>
+        <span class="muted small" id="pbWindow"></span>
+        <button id="pbPanRight" title="Geser ke kanan">▶</button>
+        <span class="spacer"></span>
+        <div class="btn-group" id="pbJump">
+          <button data-jump="-60" title="Mundur 1 menit">−1 mnt</button><button data-jump="-10" title="Mundur 10 detik">−10 dtk</button>
+          <button data-jump="10" title="Maju 10 detik">+10 dtk</button><button data-jump="60" title="Maju 1 menit">+1 mnt</button>
+        </div>
+      </div>
+
+      <div class="pb-timeline" id="pbTimeline" title="Klik untuk memutar dari jam ini · scroll = zoom">
+        <div class="pb-ranges" id="pbRanges"></div>
+        <div class="pb-head-marker" id="pbMarker" hidden></div>
+        <div class="pb-hover" id="pbHover" hidden></div>
+      </div>
+      <div class="pb-hours" id="pbHours"></div>
+
+      <div class="pb-controls">
+        <div class="pb-speed">
+          <span class="muted">Kecepatan</span>
+          <div class="btn-group" id="pbSpeed">
+            <button data-speed="1" class="active">1×</button><button data-speed="2">2×</button>
+            <button data-speed="4">4×</button><button data-speed="8">8×</button>
+          </div>
+        </div>
+        <div class="pb-export">
+          <span class="pb-ex-title">Ekspor / kunci</span>
+          <div class="pb-ex-field">
+            <span class="muted small">Mulai</span>
+            <input id="pbExFrom" inputmode="numeric" placeholder="jj:mm:dd" maxlength="8" autocomplete="off">
+            <button id="pbExFromNow" class="pb-take" title="Ambil posisi video sekarang sebagai jam MULAI"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/></svg></button>
+          </div>
+          <span class="muted">→</span>
+          <div class="pb-ex-field">
+            <span class="muted small">Selesai</span>
+            <input id="pbExTo" inputmode="numeric" placeholder="jj:mm:dd" maxlength="8" autocomplete="off">
+            <button id="pbExToNow" class="pb-take" title="Ambil posisi video sekarang sebagai jam SELESAI"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/></svg></button>
+          </div>
+          <span class="muted small pb-ex-info" id="pbExInfo"></span>
+          <button id="pbExport" class="primary" disabled>⬇ Ekspor MP4</button>
+          <button id="pbLock" hidden disabled title="Rentang yang dikunci tidak ikut terhapus otomatis">🔒 Kunci</button>
+        </div>
+      </div>
+      <div class="pb-legend muted">
+        <span><i class="lg rec"></i> Ada rekaman</span><span><i class="lg lock"></i> Dikunci</span>
+        <span>Bagian kosong = tidak ada rekaman / sudah tertimpa</span>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="/js/playback.js"></script>
+</body>
+</html>

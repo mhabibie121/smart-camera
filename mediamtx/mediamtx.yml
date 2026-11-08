@@ -1,0 +1,47 @@
+# Konfigurasi MediaMTX untuk CCTV live view.
+# Path kamera TIDAK ditulis di sini: dipasang otomatis oleh backend (server/mediamtx.js)
+# lewat API MediaMTX, dari daftar kamera di halaman admin.
+
+logLevel: info
+logDestinations: [stdout]
+
+# ---------- Hak akses ----------
+# Setiap ada yang mau menonton, MediaMTX bertanya ke backend.
+# Backend yang memutuskan boleh/tidak berdasarkan grup user.
+authMethod: http
+authHTTPAddress: http://127.0.0.1:3000/internal/mediamtx-auth
+authHTTPExclude:
+  - action: api
+  - action: metrics
+  - action: pprof
+  - action: playback
+
+# ---------- API (khusus localhost, dipakai backend) ----------
+api: true
+apiAddress: 127.0.0.1:9997
+
+metrics: false
+pprof: false
+playback: true
+# Server putar ulang rekaman: hanya dari PC ini (aplikasi yang mengecek izin user)
+playbackAddress: 127.0.0.1:9996
+# ---------- Protokol output ----------
+# Hanya WebRTC yang dibuka untuk browser. RTSP/RTMP/HLS/SRT dimatikan supaya
+# tidak ada jalan lain untuk menarik stream tanpa lewat cek hak akses.
+# (Menarik stream DARI kamera tetap jalan walau server RTSP dimatikan.)
+rtsp: false
+rtmp: false
+hls: false
+srt: false
+moq: false
+
+webrtc: true
+# Port HTTP untuk signaling WebRTC (dibuka ke jaringan user)
+webrtcAddress: :8889
+# Port UDP untuk video WebRTC (dibuka ke jaringan user)
+webrtcLocalUDPAddress: :8189
+# Kalau nanti diakses dari luar jaringan / lewat NAT, isi IP publik atau
+# domain server di sini, mis. [cctv.perusahaan.co.id]
+webrtcAdditionalHosts: []
+
+paths: {}

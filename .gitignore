@@ -1,0 +1,26 @@
+node_modules/
+data/
+.env
+bin/
+build/
+release/
+dist/
+
+# File program pihak ketiga (diunduh terpisah, bukan kode kita)
+test/mediamtx/
+test/p2p/
+*.exe
+*.zip
+
+# Rekaman, log, dan data hasil tes
+test/record-test/recordings/
+*.log
+*.mp4
+
+# Kunci & sertifikat (JANGAN pernah diunggah)
+*.key
+*.crt
+*.pem
+*.pfx
+password-admin.txt
+initial-admin.txt

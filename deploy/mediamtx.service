@@ -1,0 +1,20 @@
+[Unit]
+Description=MediaMTX - CCTV stream server
+After=network-online.target cctv-web.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=cctv
+Group=cctv
+ExecStart=/opt/mediamtx/mediamtx /opt/cctv/mediamtx/mediamtx.yml
+Restart=always
+RestartSec=3
+LimitNOFILE=65536
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

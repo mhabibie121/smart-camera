@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tes CCTV MediaMTX</title>
+<style>
+  :root { --bg:#0e1116; --panel:#161b22; --panel2:#1f2630; --border:#2d3540; --text:#e6edf3; --muted:#8b949e;
+          --accent:#1f6feb; --ok:#3fb950; --bad:#f85149; --warn:#d29922; color-scheme: dark;
+          font-family: system-ui, "Segoe UI", Roboto, sans-serif; font-size: 14px; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); }
+  header { padding: 14px 16px; background: var(--panel); border-bottom: 1px solid var(--border); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  header h1 { font-size: 16px; margin: 0; }
+  header .muted { margin-left: auto; }
+  .muted { color: var(--muted); }
+  main { padding: 16px; max-width: 1400px; margin: 0 auto; }
+  form { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 14px; display: grid;
+         grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; align-items: end; margin-bottom: 16px; }
+  form .wide { grid-column: 1 / -1; }
+  label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+  input, select, button { font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; }
+  button { background: var(--panel2); cursor: pointer; }
+  button:hover { border-color: var(--muted); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.danger { color: var(--bad); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 12px; }
+  .cam { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .cam .head { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+  .cam .head b { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cam .head button { padding: 3px 9px; font-size: 12px; }
+  .stage { position: relative; aspect-ratio: 16/9; background: #000; }
+  .stage video { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .stage .msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center;
+                padding: 16px; color: var(--muted); pointer-events: none; }
+  .cam.playing .stage .msg { display: none; }
+  .info { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 10px; font-size: 12px; }
+  .tag { padding: 2px 8px; border-radius: 10px; background: var(--panel2); border: 1px solid var(--border); }
+  .tag.ok { color: var(--ok); border-color: var(--ok); }
+  .tag.bad { color: var(--bad); border-color: var(--bad); }
+  .tag.warn { color: var(--warn); border-color: var(--warn); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+  .playing .dot { background: var(--ok); }
+  .error .dot { background: var(--bad); }
+  #err { color: var(--bad); }
+  .empty { color: var(--muted); text-align: center; padding: 40px; border: 1px dashed var(--border); border-radius: 8px; }
+  @media (max-width: 480px) { .grid { grid-template-columns: 1fr; } }
+  details.p2p { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 16px; }
+  details.p2p > summary { padding: 12px 14px; cursor: pointer; font-weight: 600; }
+  details.p2p > summary .tag { font-weight: 400; margin-left: 8px; }
+  details.p2p form { border: none; border-top: 1px solid var(--border); border-radius: 0; margin: 0; }
+  .p2p-note { padding: 0 14px 12px; font-size: 12px; }
+  .tunnel { border-top: 1px solid var(--border); padding: 10px 14px; }
+  .tunnel .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .tunnel .row b { font-family: ui-monospace, monospace; }
+  .fo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 6px 14px; margin-top: 8px; font-size: 12px; }
+  .badge-mode { font-weight: 700; padding: 3px 10px; border-radius: 10px; }
+  .badge-mode.ip { background: rgba(63,185,80,.15); color: var(--ok); }
+  .badge-mode.p2p { background: rgba(210,153,34,.15); color: var(--warn); }
+  .tunnel pre { margin: 8px 0 0; max-height: 160px; overflow: auto; background: var(--bg); border: 1px solid var(--border);
+                border-radius: 6px; padding: 8px; font-size: 11px; color: var(--muted); white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Tes CCTV · MediaMTX</h1>
+  <span class="muted" id="mtx">Mengecek MediaMTX…</span>
+</header>
+<main>
+  <form id="form" autocomplete="off">
+    <label>Nama <input name="name" required placeholder="pintu-depan"></label>
+    <label>IP kamera <input name="ip" placeholder="192.168.1.10"></label>
+    <label>Port <input name="port" type="number" value="554"></label>
+    <label>Channel <input name="channel" type="number" value="1"></label>
+    <label>Username <input name="user" value="admin"></label>
+    <label>Password <input name="pass" type="password" autocomplete="new-password"></label>
+    <button class="primary">+ Tambah kamera</button>
+    <label class="wide">Atau isi URL RTSP lengkap (kalau diisi, IP/port/channel di atas diabaikan; main &amp; sub dibuat dari subtype=0/1)
+      <input name="url" placeholder="rtsp://admin:password@192.168.1.10:554/cam/realmonitor?channel=1&subtype=0">
+    </label>
+    <div class="wide" id="err"></div>
+  </form>
+  <details class="p2p" id="p2pBox">
+    <summary>Sambung lewat P2P Dahua (SN) <span class="tag warn">eksperimen</span></summary>
+    <div class="p2p-note muted">Lewat cloud Easy4IP Dahua memakai <b>dh-p2p</b>. Fitur P2P di perangkat harus aktif
+      (Network → P2P). Mode <b>Relay</b> lewat server Dahua (lebih lambat, tapi paling sering berhasil). Mode Python hanya 1 koneksi sekaligus. Bisa putus sewaktu-waktu.
+      Hanya bisa dipakai dari PC yang menjalankan halaman ini.</div>
+    <form id="p2pForm" autocomplete="off">
+      <label>SN perangkat <input name="sn" required placeholder="mis. 7G0AB12CDE34F56" style="text-transform:uppercase"></label>
+      <label>Nama <input name="name" placeholder="p2p-nvr"></label>
+      <label>Channel <input name="channel" type="number" value="1" min="1"></label>
+      <label>Username <input name="user" value="admin"></label>
+      <label>Password <input name="pass" type="password" autocomplete="new-password"></label>
+      <label>Cara sambung
+        <select name="engine">
+          <option value="relay">Relay (disarankan)</option>
+          <option value="direct">Langsung (P2P murni)</option>
+          <option value="python">Python (bisa pakai login)</option>
+        </select>
+      </label>
+      <label>Login P2P (khusus Python)
+        <select name="type"><option value="auto">Otomatis</option><option value="0">Tanpa login</option><option value="1">Pakai login</option></select>
+      </label>
+      <button class="primary">Sambungkan</button>
+      <div class="wide" id="p2pErr" style="color:var(--bad)"></div>
+    </form>
+    <div id="tunnels"></div>
+  </details>
+  <details class="p2p" id="foBox">
+    <summary>Failover otomatis IP → P2P (radio putus) <span class="tag warn">eksperimen</span></summary>
+    <div class="p2p-note muted">Kamera ditonton lewat <b>IP</b> (jalur radio). Kalau IP tidak terjangkau lebih dari batas waktu,
+      stream otomatis pindah ke <b>P2P lewat SN</b>, lalu kembali ke IP setelah IP stabil lagi. Kamera muncul di grid dengan nama yang sama
+      dan pemutar menyambung ulang sendiri. Data hanya disimpan selama halaman tes jalan.</div>
+    <form id="foForm" autocomplete="off">
+      <label>Nama <input name="name" required placeholder="pulau-1"></label>
+      <label>IP (via radio) <input name="ip" required placeholder="10.3.4.14"></label>
+      <label>Port RTSP <input name="port" type="number" value="554"></label>
+      <label>Channel <input name="channel" type="number" value="1" min="1"></label>
+      <label>Username <input name="user" value="admin"></label>
+      <label>Password <input name="pass" type="password" autocomplete="new-password"></label>
+      <label>SN cadangan (P2P) <input name="sn" required placeholder="7G005B8PAZB233C" style="text-transform:uppercase"></label>
+      <label>Pindah ke P2P setelah (dtk) <input name="offlineSec" type="number" value="60" min="10"></label>
+      <label>Kembali ke IP setelah stabil (dtk) <input name="onlineSec" type="number" value="60" min="10"></label>
+      <button class="primary">Pantau kamera</button>
+      <div class="wide" id="foErr" style="color:var(--bad)"></div>
+    </form>
+    <div id="foList"></div>
+  </details>
+  <div class="grid" id="grid"></div>
+</main>
+
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]);
+const WHEP_BASE = `${location.protocol}//${location.hostname}:8889`;
+
+async function api(method, p, body) {
+  const r = await fetch('/api' + p, { method, body: body ? JSON.stringify(body) : undefined });
+  const text = await r.text();
+  let data = null; try { data = JSON.parse(text); } catch {}
+  if (!r.ok) throw new Error(data?.error || text || `HTTP ${r.status}`);
+  return data;
+}
+
+// ---------- Tambah kamera ----------
+function dahuaUrl(f, subtype) {
+  if (f.url.value.trim()) {
+    const u = f.url.value.trim();
+    return /subtype=\d/.test(u) ? u.replace(/subtype=\d/, `subtype=${subtype}`)
+                                : u + (u.includes('?') ? '&' : '?') + `subtype=${subtype}`;
+  }
+  const auth = f.user.value ? `${encodeURIComponent(f.user.value)}:${encodeURIComponent(f.pass.value)}@` : '';
+  return `rtsp://${auth}${f.ip.value.trim()}:${f.port.value || 554}/cam/realmonitor?channel=${f.channel.value || 1}&subtype=${subtype}`;
+}
+
+$('#form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  $('#err').textContent = '';
+  const slug = f.name.value.trim().toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-|-$/g, '');
+  if (!slug) return ($('#err').textContent = 'Nama tidak valid');
+  if (!f.url.value.trim() && !f.ip.value.trim()) return ($('#err').textContent = 'Isi IP kamera atau URL RTSP');
+  try {
+    for (const [q, sub] of [['main', 0], ['sub', 1]]) {
+      await api('POST', `/v3/config/paths/add/${slug}_${q}`, {
+        source: dahuaUrl(f, sub),
+        sourceOnDemand: true,
+        sourceOnDemandStartTimeout: '10s',
+        sourceOnDemandCloseAfter: '10s',
+        rtspTransport: 'tcp',
+      });
+    }
+    f.name.value = ''; f.pass.value = ''; f.url.value = '';
+    await refresh();
+  } catch (ex) {
+    $('#err').textContent = 'Gagal menambah: ' + ex.message;
+  }
+});
+
+// ---------- Pemutar WebRTC (WHEP) ----------
+class Player {
+  constructor(video, path, onState) {
+    Object.assign(this, { video, path, onState, retries: 0, reconnects: 0 });
+  }
+  // Putus / error -> coba lagi otomatis (jeda makin lama: 2, 4, 8 ... maks 20 dtk)
+  scheduleRetry(why) {
+    if (this.stopped) return;
+    clearTimeout(this.retryTimer);
+    const wait = Math.min(20000, 2000 * 2 ** Math.min(this.retries, 4));
+    this.retries++;
+    this.onState('connecting', `${why}\nSambung ulang otomatis dalam ${Math.round(wait / 1000)} dtk…`);
+    this.retryTimer = setTimeout(() => this.start(), wait);
+  }
+  // Gambar tidak bergerak 6 dtk padahal sedang tayang -> sambung ulang
+  watchStall() {
+    clearInterval(this.stallTimer);
+    let last = -1, still = 0;
+    this.stallTimer = setInterval(() => {
+      if (!this.playing) return;
+      const t = this.video.currentTime;
+      still = t === last ? still + 1 : 0;
+      last = t;
+      if (still >= 6) { this.reconnects++; this.scheduleRetry('Gambar macet'); }
+    }, 1000);
+  }
+  async start() {
+    this.stopped = false;
+    this.stop(true);
+    const t0 = performance.now();
+    this.onState('connecting', 'Menghubungkan ke kamera…');
+    const pc = this.pc = new RTCPeerConnection();
+    pc.addTransceiver('video', { direction: 'recvonly' });
+    pc.ontrack = (e) => { this.video.srcObject = e.streams[0] || new MediaStream([e.track]); };
+    this.video.onloadeddata = () => {
+      this.playing = true;
+      this.retries = 0;
+      this.onState('playing', null, Math.round(performance.now() - t0));
+    };
+    pc.onconnectionstatechange = () => {
+      if (pc === this.pc && ['failed', 'disconnected', 'closed'].includes(pc.connectionState)) {
+        this.reconnects++;
+        this.scheduleRetry('Koneksi video terputus');
+      }
+    };
+    this.watchStall();
+    try {
+      await pc.setLocalDescription(await pc.createOffer());
+      await new Promise((ok) => {
+        if (pc.iceGatheringState === 'complete') return ok();
+        const t = setTimeout(ok, 1500);
+        pc.onicegatheringstatechange = () => pc.iceGatheringState === 'complete' && (clearTimeout(t), ok());
+      });
+      const url = `${WHEP_BASE}/${this.path}/whep`;
+      const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/sdp' }, body: pc.localDescription.sdp });
+      if (r.status !== 201) {
+        const body = await r.text().catch(() => '');
+        let msg = body; try { msg = JSON.parse(body).error || body; } catch {}
+        throw new Error(`${r.status}: ${msg}`);
+      }
+      const loc = r.headers.get('Location');
+      this.session = loc ? new URL(loc, url).href : null;
+      await pc.setRemoteDescription({ type: 'answer', sdp: await r.text() });
+    } catch (e) {
+      if (pc !== this.pc) return;
+      // Codec memang tidak didukung -> jangan diulang terus
+      if (/codecs not supported/i.test(e.message)) return this.onState('error', explain(e.message));
+      this.scheduleRetry(explain(e.message));
+    }
+  }
+  stop(keepRetry) {
+    if (!keepRetry) { this.stopped = true; clearTimeout(this.retryTimer); }
+    clearInterval(this.stallTimer);
+    this.playing = false;
+    if (this.session) fetch(this.session, { method: 'DELETE' }).catch(() => {});
+    this.session = null;
+    if (this.pc) { this.pc.close(); this.pc = null; }
+    this.video.srcObject = null;
+  }
+}
+
+function explain(msg) {
+  if (/codecs not supported|no supported|H265|HEVC/i.test(msg))
+    return `Codec tidak didukung browser (kemungkinan H.265). Ubah stream kamera ke H.264.\n(${msg})`;
+  if (/no stream|not available|timed out|404/i.test(msg))
+    return `Kamera tidak bisa ditarik. Cek IP, password, channel, dan apakah komputer ini bisa ping ke kamera. Lihat juga log MediaMTX.\n(${msg})`;
+  if (/Failed to fetch/i.test(msg))
+    return 'Tidak bisa menghubungi MediaMTX di port 8889. Sudah dijalankan?';
+  return msg;
+}
+
+// ---------- Tampilan ----------
+const cams = new Map(); // slug -> { el, player, quality }
+
+function sourceLabel(src) {
+  try { const u = new URL(src); return `${u.hostname}:${u.port || 554} ch${u.searchParams.get('channel') || '?'}`; }
+  catch { return ''; }
+}
+
+function codecOf(p) {
+  const tracks = p.tracks2 || p.tracks || [];
+  return tracks.map((t) => (typeof t === 'string' ? t : t.codec)).filter(Boolean);
+}
+
+async function refresh() {
+  const list = (await api('GET', '/v3/config/paths/list?itemsPerPage=1000')).items || [];
+  const slugs = new Map();
+  for (const p of list) {
+    const m = /^(.+)_(main|sub)$/.exec(p.name);
+    if (m && !slugs.has(m[1])) slugs.set(m[1], sourceLabel(p.source));
+  }
+  for (const [slug, c] of cams) if (!slugs.has(slug)) { c.player.stop(); c.el.remove(); cams.delete(slug); }
+  for (const [slug, label] of slugs) if (!cams.has(slug)) addTile(slug, label);
+  $('#grid').querySelector('.empty')?.remove();
+  if (!cams.size) $('#grid').innerHTML = '<div class="empty">Belum ada kamera. Tambahkan lewat form di atas.</div>';
+}
+
+function addTile(slug, label) {
+  const el = document.createElement('div');
+  el.className = 'cam';
+  el.innerHTML = `
+    <div class="head">
+      <span class="dot"></span><b>${esc(slug)}</b><span class="muted">${esc(label)}</span>
+      <button data-q="sub" class="on">Sub</button><button data-q="main">Main</button>
+      <button data-act="retry" title="Sambung ulang">↻</button>
+      <button data-act="del" class="danger" title="Hapus">✕</button>
+    </div>
+    <div class="stage"><video autoplay muted playsinline></video><div class="msg"></div></div>
+    <div class="info"></div>`;
+  $('#grid').appendChild(el);
+  const c = { el, quality: 'sub' };
+  c.player = new Player($('video', el), `${slug}_sub`, (state, msg, ms) => {
+    el.classList.toggle('playing', state === 'playing');
+    el.classList.toggle('error', state === 'error');
+    $('.msg', el).style.whiteSpace = 'pre-line';
+    $('.msg', el).textContent = msg || '';
+    if (state === 'playing') updateInfo(slug, c, ms);
+    else if (state === 'error') updateInfo(slug, c);
+    else $('.info', el).innerHTML = '';
+  });
+  cams.set(slug, c);
+  el.addEventListener('click', async (e) => {
+    const q = e.target.dataset.q, act = e.target.dataset.act;
+    if (q) {
+      c.quality = q;
+      el.querySelectorAll('[data-q]').forEach((b) => b.classList.toggle('on', b.dataset.q === q));
+      c.player.path = `${slug}_${q}`;
+      c.player.start();
+    }
+    if (act === 'retry') c.player.start();
+    if (act === 'del' && confirm(`Hapus kamera ${slug}?`)) {
+      c.player.stop();
+      for (const q2 of ['main', 'sub']) await api('DELETE', `/v3/config/paths/delete/${slug}_${q2}`).catch(() => {});
+      refresh();
+    }
+  });
+  c.player.start();
+}
+
+async function updateInfo(slug, c, ms) {
+  const v = $('video', c.el);
+  const tags = [`<span class="tag">${c.quality === 'main' ? 'Main stream' : 'Substream'}</span>`];
+  try {
+    const p = await api('GET', `/v3/paths/get/${slug}_${c.quality}`);
+    for (const codec of codecOf(p)) {
+      const cls = /H264|Opus|G711/i.test(codec) ? 'ok' : /H265|HEVC/i.test(codec) ? 'warn' : '';
+      tags.push(`<span class="tag ${cls}">${esc(codec)}</span>`);
+    }
+    if (p.bytesReceived) c.bytes = { v: p.bytesReceived, t: Date.now() };
+  } catch {}
+  if (v.videoWidth) tags.push(`<span class="tag">${v.videoWidth}×${v.videoHeight}</span>`);
+  if (ms) tags.push(`<span class="tag">muncul dalam ${(ms / 1000).toFixed(1)} dtk</span>`);
+  if (c.player.reconnects) tags.push(`<span class="tag warn">sambung ulang ${c.player.reconnects}×</span>`);
+  $('.info', c.el).innerHTML = tags.join('');
+}
+
+// ---------- P2P (SN) ----------
+const P2P_STATE = { connecting: ['warn', 'Menyambung…'], ready: ['ok', 'Tersambung'], error: ['bad', 'Gagal'] };
+let p2pTimer = null, p2pReady = new Set();
+
+async function p2p(method, p, body) {
+  const r = await fetch('/p2p' + p, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+  return data;
+}
+
+async function refreshTunnels() {
+  let list;
+  try { list = await p2p('GET', '/list'); } catch (e) { $('#tunnels').innerHTML = `<div class="tunnel muted">${esc(e.message)}</div>`; return; }
+  const box = $('#tunnels');
+  const openLogs = new Set([...box.querySelectorAll('details[open]')].map((d) => d.dataset.sn));
+  box.innerHTML = list.map((t) => {
+    const [cls, label] = P2P_STATE[t.state] || ['', t.state];
+    return `<div class="tunnel">
+      <div class="row"><span class="tag ${cls}">${label}</span><b>${esc(t.sn)}</b>
+        <span class="muted">${esc(t.name)} · ch${t.channel} · port ${t.port} · ${esc({ relay: 'relay', direct: 'langsung', python: 'python' }[t.engine] || t.engine)}${t.type ? ' · pakai login' : ''}</span>
+        <span style="flex:1"></span><button data-stop="${esc(t.sn)}" class="danger">Putuskan</button></div>
+      <div class="muted" style="margin-top:6px">${esc(t.message)}</div>
+      <details data-sn="${esc(t.sn)}" ${openLogs.has(t.sn) ? 'open' : ''}><summary class="muted" style="cursor:pointer;margin-top:6px">Log</summary>
+        <pre>${esc(t.log.join('\n'))}</pre></details>
+    </div>`;
+  }).join('');
+  // Tunnel yang baru siap -> muncul sebagai kamera di grid
+  for (const t of list) if (t.state === 'ready' && !p2pReady.has(t.sn)) { p2pReady.add(t.sn); refresh(); }
+  for (const sn of p2pReady) if (!list.some((t) => t.sn === sn && t.state === 'ready')) p2pReady.delete(sn);
+  clearTimeout(p2pTimer);
+  if (list.some((t) => t.state === 'connecting') || $('#p2pBox').open) p2pTimer = setTimeout(refreshTunnels, 1500);
+}
+
+$('#p2pForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  $('#p2pErr').textContent = '';
+  try {
+    await p2p('POST', '/start', {
+      sn: f.sn.value.trim(), name: f.name.value.trim() || undefined, channel: f.channel.value,
+      user: f.user.value.trim(), pass: f.pass.value, type: f.type.value, engine: f.engine.value,
+    });
+    f.pass.value = '';
+    refreshTunnels();
+  } catch (ex) { $('#p2pErr').textContent = ex.message; }
+});
+$('#tunnels').addEventListener('click', async (e) => {
+  const sn = e.target.dataset.stop;
+  if (!sn) return;
+  await p2p('POST', '/stop', { sn }).catch(() => {});
+  await refreshTunnels();
+  refresh();
+});
+$('#p2pBox').addEventListener('toggle', refreshTunnels);
+
+// ---------- Failover IP -> P2P ----------
+let foTimer = null;
+const ago = (t) => { const s = Math.round((Date.now() - t) / 1000); return s < 60 ? `${s} dtk` : `${Math.floor(s / 60)} mnt ${s % 60} dtk`; };
+
+async function fo(method, p, body) {
+  const r = await fetch('/failover' + p, { method, headers: { 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+  return data;
+}
+
+async function refreshFailover() {
+  let list;
+  try { list = await fo('GET', '/list'); } catch (e) { $('#foList').innerHTML = `<div class="tunnel muted">${esc(e.message)}</div>`; return; }
+  $('#foList').innerHTML = list.map((c) => `<div class="tunnel">
+    <div class="row">
+      <span class="badge-mode ${c.mode}">${c.mode === 'ip' ? 'Lewat IP' : 'Lewat P2P'}</span>
+      <b>${esc(c.name)}</b><span class="muted">${esc(c.ip)}:${c.port} ch${c.channel} · SN ${esc(c.sn)}</span>
+      <span style="flex:1"></span>
+      <button data-sim="${esc(c.name)}" data-down="${c.simulateDown ? '' : '1'}" class="${c.simulateDown ? 'on' : ''}">
+        ${c.simulateDown ? 'Stop simulasi (radio pulih)' : 'Simulasi radio putus'}</button>
+      <button data-fodel="${esc(c.name)}" class="danger">Hapus</button>
+    </div>
+    <div class="fo-grid">
+      <div>IP: <b style="color:${c.ipOnline ? 'var(--ok)' : c.ipOnline === false ? 'var(--bad)' : 'var(--muted)'}">
+        ${c.ipOnline ? 'terjangkau' : c.ipOnline === false ? 'putus' : 'dicek…'}</b> sejak ${ago(c.ipSince)}${c.simulateDown ? ' (simulasi)' : ''}</div>
+      <div>Mode sekarang: ${c.mode.toUpperCase()} sejak ${ago(c.modeSince)}</div>
+      <div>Aturan: P2P setelah ${c.offlineSec} dtk putus, IP lagi setelah ${c.onlineSec} dtk stabil</div>
+      ${c.tunnel ? `<div>Tunnel P2P: ${esc(c.tunnel.state)} · ${esc(c.tunnel.message)}</div>` : ''}
+    </div>
+    <details><summary class="muted" style="cursor:pointer;margin-top:6px">Riwayat</summary><pre>${esc(c.events.join('\n'))}</pre></details>
+  </div>`).join('');
+  // Kamera failover baru -> muncul di grid
+  if (list.some((c) => !cams.has(c.name))) refresh();
+  clearTimeout(foTimer);
+  if (list.length || $('#foBox').open) foTimer = setTimeout(refreshFailover, 2000);
+}
+
+$('#foForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const f = e.target;
+  $('#foErr').textContent = '';
+  try {
+    await fo('POST', '/add', Object.fromEntries(new FormData(f)));
+    f.pass.value = '';
+    await refreshFailover();
+    refresh();
+  } catch (ex) { $('#foErr').textContent = ex.message; }
+});
+$('#foList').addEventListener('click', async (e) => {
+  const sim = e.target.dataset.sim, del = e.target.dataset.fodel;
+  if (sim) await fo('POST', '/simulate', { name: sim, down: !!e.target.dataset.down }).catch((ex) => alert(ex.message));
+  if (del && confirm(`Hapus pemantauan ${del}?`)) { await fo('POST', '/remove', { name: del }).catch(() => {}); refresh(); }
+  refreshFailover();
+});
+$('#foBox').addEventListener('toggle', refreshFailover);
+
+// ---------- Mulai ----------
+(async () => {
+  try {
+    await api('GET', '/v3/config/global/get');
+    $('#mtx').textContent = 'MediaMTX terhubung ✓';
+    $('#mtx').style.color = 'var(--ok)';
+    await refresh();
+    refreshTunnels();
+    refreshFailover();
+  } catch (e) {
+    $('#mtx').textContent = e.message;
+    $('#mtx').style.color = 'var(--bad)';
+    $('#grid').innerHTML = '<div class="empty">Jalankan MediaMTX dulu, lalu muat ulang halaman ini.</div>';
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "name": "cctv-liveview",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Live view CCTV Dahua lewat MediaMTX + web sendiri dengan hak akses per grup",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node server/main.js",
+    "dev": "node --watch server/main.js",
+    "reset-admin": "node server/main.js reset-admin",
+    "build": "node scripts/build.mjs",
+    "installer": "node scripts/installer.mjs"
+  },
+  "dependencies": {
+    "express": "^4.22.3"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "postject": "^1.0.0-alpha.6"
+  }
+}

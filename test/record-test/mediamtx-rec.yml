@@ -1,0 +1,43 @@
+# MediaMTX khusus TES REKAMAN (terpisah dari aplikasi utama; port berbeda).
+# Rekaman "raw" (stream copy, tanpa encode ulang) dalam format fMP4 per segmen.
+logLevel: info
+logDestinations: [stdout, file]
+logFile: mediamtx-rec.log
+
+# API untuk mendaftarkan kamera (hanya dari PC ini)
+api: true
+apiAddress: 127.0.0.1:19997
+authMethod: internal
+authInternalUsers:
+  - user: any
+    pass:
+    ips: ["127.0.0.1", "::1"]
+    permissions:
+      - action: api
+      - action: playback
+
+# Server playback: memutar ulang rekaman ke browser (hanya dari PC ini)
+playback: true
+playbackAddress: 127.0.0.1:19996
+
+# Tidak perlu server tayang langsung untuk tes ini
+rtsp: false
+rtmp: false
+hls: false
+webrtc: false
+srt: false
+moq: false
+metrics: false
+pprof: false
+
+pathDefaults:
+  record: true
+  recordPath: ./recordings/%path/%Y-%m-%d_%H-%M-%S-%f
+  recordFormat: fmp4
+  recordPartDuration: 1s
+  # Segmen 1 menit supaya tes cepat terlihat (produksi: 15–60 menit)
+  recordSegmentDuration: 1m
+  # Hapus berdasarkan umur dimatikan: yang menghapus adalah "petugas kebersihan" (hapus saat penuh)
+  recordDeleteAfter: 0s
+
+paths: {}

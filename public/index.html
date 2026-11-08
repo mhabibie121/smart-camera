@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Smart Camera</title>
+  <link rel="icon" type="image/svg+xml" href="/img/logo.svg">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <button id="toggleSidebar" title="Tampilkan/sembunyikan daftar kamera">☰</button>
+    <span class="brand"><img class="brand-logo" src="/img/logo.svg" alt=""><span>Smart Camera</span></span>
+    <span class="spacer"></span>
+    <span class="user" id="userInfo"></span>
+    <a class="btn" href="/playback" id="playbackLink" hidden>⏪ Putar ulang</a>
+    <a class="btn" href="/admin" id="adminLink" hidden>Admin</a>
+    <a class="btn primary" href="/login" id="loginLink" hidden>Masuk</a>
+    <button id="logout">Keluar</button>
+  </header>
+
+  <div class="viewer">
+    <aside class="sidebar" id="sidebar">
+      <div class="views-panel">
+        <div class="views-head">
+          <span>View tersimpan</span>
+          <button id="saveView" title="Simpan susunan sekarang sebagai View">+ Simpan</button>
+        </div>
+        <div class="views-list" id="viewsList"></div>
+      </div>
+      <div class="filters">
+        <input type="search" id="search" placeholder="Cari kamera...">
+        <div class="count" id="count"></div>
+      </div>
+      <div class="cam-tree" id="camTree"></div>
+      <div class="ptz-panel" id="ptzPanel" hidden>
+        <div class="ptz-head" id="ptzHead" title="Klik untuk buka/tutup">
+          <span>PTZ</span><span class="ptz-cam" id="ptzCam"></span><span class="caret">▾</span>
+        </div>
+        <div class="ptz-body" id="ptzBody">
+          <div class="ptz-dial">
+            <button data-op="upleft" class="d ul">◤</button><button data-op="up" class="d u">▲</button><button data-op="upright" class="d ur">◥</button>
+            <button data-op="left" class="d l">◀</button><span class="d c"></span><button data-op="right" class="d r">▶</button>
+            <button data-op="downleft" class="d dl">◣</button><button data-op="down" class="d dn">▼</button><button data-op="downright" class="d dr">◢</button>
+          </div>
+          <label class="ptz-step">Step <input type="range" id="ptzSpeed" min="1" max="8" value="4"></label>
+          <div class="ptz-lens">
+            <button data-op="zoomin" title="Zoom masuk">＋</button><span>Zoom</span><button data-op="zoomout" title="Zoom keluar">－</button>
+            <button data-op="focusnear" title="Fokus dekat">＋</button><span>Fokus</span><button data-op="focusfar" title="Fokus jauh">－</button>
+            <button data-op="irisopen" title="Iris buka (lebih terang)">＋</button><span>Iris</span><button data-op="irisclose" title="Iris tutup (lebih gelap)">－</button>
+          </div>
+          <div class="ptz-presets">
+            <input type="number" id="ptzPreset" min="1" max="255" value="1" title="Nomor preset">
+            <button id="ptzGo" title="Pergi ke preset">Ke preset</button>
+          </div>
+          <div class="ptz-msg" id="ptzMsg"></div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="stage" id="stage">
+      <div class="grid" id="grid"></div>
+      <div class="bottombar">
+        <div class="left">
+          <button id="fillAll" title="Isi grid dengan semua kamera yang diizinkan">Semua kamera</button>
+          <button id="clearAll" title="Kosongkan semua kotak">Kosongkan</button>
+          <span class="view-name" id="viewName"></span>
+        </div>
+        <div class="pager">
+          <button id="prev" title="Halaman sebelumnya">◀</button>
+          <span class="info" id="pageInfo">1/1</span>
+          <button id="next" title="Halaman berikutnya">▶</button>
+        </div>
+        <div class="right">
+          <div class="btn-group" id="layouts"></div>
+          <button id="customLayout" title="Custom layout">✎</button>
+          <button id="fullscreen" title="Layar penuh (F)">⛶</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Dialog custom layout -->
+  <dialog id="layoutDialog" class="layout-dialog">
+    <form method="dialog" id="layoutForm">
+      <h2>Custom Layout</h2>
+      <div class="layout-dialog-body">
+        <div class="preset-list" id="presetList"></div>
+        <div>
+          <div class="rc">
+            <label>Row <input type="number" name="rows" min="1" max="8" value="3"></label>
+            <label>Col <input type="number" name="cols" min="1" max="8" value="3"></label>
+          </div>
+          <div class="layout-preview" id="layoutPreview"></div>
+          <div class="hint" id="layoutHint"></div>
+        </div>
+      </div>
+      <div class="buttons">
+        <button value="cancel" formnovalidate>Batal</button>
+        <button class="primary" value="ok">OK</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="/js/viewer.js"></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+nama,lokasi,ip,port,channel,username,password,rtsp,ptz,http_port,grup
+Pintu Gerbang Utama,Pelabuhan A,192.168.1.10,554,1,,,,,,Operasional
+Loket 01,Pelabuhan A,192.168.1.11,554,1,,,,,,Operasional|Security
+PTZ Dermaga,Pelabuhan A,192.168.1.12,554,1,,,,1,80,Security
+NVR Channel 5,Pelabuhan B,192.168.2.20,554,5,admin,GANTI_PASSWORD,,,,Operasional
+Kamera Eksternal,Lainnya,,,,,,rtsp://user:GANTI_PASSWORD@203.0.113.5:554/cam/realmonitor?channel=1&subtype=0,,,Security

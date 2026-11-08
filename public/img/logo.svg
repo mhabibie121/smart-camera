@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Smart Camera">
+  <rect width="120" height="120" rx="26" fill="#0F2A44"/>
+  <path d="M60 20 L92 32 L92 62 C92 82 78 95 60 102 C42 95 28 82 28 62 L28 32 Z" fill="none" stroke="#39C5F0" stroke-width="5" stroke-linejoin="round"/>
+  <circle cx="60" cy="60" r="16" fill="#39C5F0"/>
+  <circle cx="60" cy="60" r="7.5" fill="#0F2A44"/>
+  <circle cx="56.5" cy="56.5" r="2.8" fill="#FFFFFF"/>
+</svg>

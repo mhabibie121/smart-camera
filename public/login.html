@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Masuk · Smart Camera</title>
+  <link rel="icon" type="image/svg+xml" href="/img/logo.svg">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="login-wrap">
+    <form class="card" id="form">
+      <div class="login-brand">
+        <img src="/img/logo.svg" alt="" width="64" height="64">
+        <h1>Smart Camera</h1>
+      </div>
+      <label>Username <input name="username" autocomplete="username" required autofocus></label>
+      <label>Password <input name="password" type="password" autocomplete="current-password" required></label>
+      <button class="primary" type="submit">Masuk</button>
+      <div class="error-text" id="err"></div>
+      <a class="login-back" href="/" id="back" hidden>← Kembali ke tampilan CCTV</a>
+    </form>
+  </div>
+  <script type="module">
+    import { api } from '/js/common.js';
+    const form = document.getElementById('form');
+    // Mode tamu aktif -> boleh kembali ke tampilan monitoring tanpa login
+    fetch('/api/guest').then((r) => r.json()).then((g) => {
+      if (g.available) document.getElementById('back').hidden = false;
+    }).catch(() => {});
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const err = document.getElementById('err');
+      err.textContent = '';
+      try {
+        await api('POST', '/api/login', { ...Object.fromEntries(new FormData(form)), remember: true });
+        location.href = '/';
+      } catch (ex) {
+        err.textContent = ex.message;
+      }
+    });
+  </script>
+</body>
+</html>

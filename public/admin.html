@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin · Smart Camera</title>
+  <link rel="icon" type="image/svg+xml" href="/img/logo.svg">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <span class="brand"><img class="brand-logo" src="/img/logo.svg" alt=""><span>Smart Camera</span><span class="brand-sub">Admin</span></span>
+    <a class="btn" href="/">← Live view</a>
+    <span class="spacer"></span>
+    <span class="user" id="userInfo"></span>
+    <button id="changePw">Ganti password</button>
+    <button id="logout">Keluar</button>
+  </header>
+
+  <div class="admin">
+    <nav class="tabs" id="tabs">
+      <button data-tab="cameras" class="active">Kamera</button>
+      <button data-tab="groups">Grup &amp; Akses</button>
+      <button data-tab="users">User</button>
+      <button data-tab="settings">Pengaturan</button>
+      <button data-tab="record">Rekaman</button>
+      <button data-tab="backup">Backup</button>
+    </nav>
+
+    <!-- Kamera -->
+    <section data-panel="cameras">
+      <div class="toolbar">
+        <input type="search" id="camSearch" placeholder="Cari nama, lokasi, atau IP...">
+        <span class="muted" id="camCount"></span>
+        <button id="camImport">Import CSV</button>
+        <button id="nvrAdd">Tambah NVR</button>
+        <button id="hikImport">Import dari HikCentral</button>
+        <button class="primary" id="camAdd">+ Tambah kamera</button>
+      </div>
+      <div class="toolbar bulk-bar" id="camBulk" hidden>
+        <b id="camSelCount"></b>
+        <button data-bulk="enable">Aktifkan</button>
+        <button data-bulk="disable">Nonaktifkan</button>
+        <button class="danger" data-bulk="delete">Hapus terpilih</button>
+        <button data-bulk="clear">Batal pilih</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th class="sel"><input type="checkbox" id="camSelAll" title="Pilih semua yang tampil"></th><th class="no">No</th><th></th><th>Nama</th><th>Lokasi</th><th>IP</th><th>Port</th><th>Ch</th><th>Login</th><th>Grup</th><th>Aktif</th><th></th></tr></thead>
+          <tbody id="camRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Grup -->
+    <section data-panel="groups" hidden>
+      <div class="groups-layout">
+        <div>
+          <div class="toolbar"><button class="primary" id="groupAdd">+ Grup baru</button></div>
+          <div class="group-list" id="groupList"></div>
+        </div>
+        <div id="groupEditor"><div class="muted">Pilih grup di sebelah kiri, atau buat grup baru.</div></div>
+      </div>
+    </section>
+
+    <!-- User -->
+    <section data-panel="users" hidden>
+      <div class="toolbar">
+        <span class="spacer" style="flex:1"></span>
+        <button class="primary" id="userAdd">+ Tambah user</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Username</th><th>Peran</th><th>Grup</th><th>PTZ</th><th>Dibuat</th><th></th></tr></thead>
+          <tbody id="userRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Pengaturan -->
+    <section data-panel="settings" hidden>
+      <form class="card settings-card" id="settingsForm">
+        <h3>Login default kamera</h3>
+        <div class="muted">Dipakai untuk kamera yang username/password-nya dikosongkan.</div>
+        <label>Username <input name="default_cam_user" autocomplete="off"></label>
+        <label>Password <input name="default_cam_pass" type="password" autocomplete="new-password" placeholder="(tidak diubah)"></label>
+        <h3 style="margin-top:18px">Batas kotak grid</h3>
+        <div class="muted">Jumlah kotak maksimal untuk user biasa, supaya PC tidak berat. Bisa diatur beda per grup di tab Grup. Admin selalu boleh sampai 64.</div>
+        <label>Default maks kotak <input name="default_max_tiles" type="number" min="1" max="64"></label>
+        <div class="buttons" style="margin-top:14px"><button class="primary">Simpan</button></div>
+      </form>
+      <form class="card settings-card" id="hikForm" autocomplete="off">
+        <h3>HikCentral (OpenAPI)</h3>
+        <div class="muted">Untuk kamera dari server HikCentral pihak luar. URL RTSP-nya berisi token yang cepat kedaluwarsa,
+          jadi sistem meminta URL baru otomatis setiap kali kamera ditonton. AppKey &amp; AppSecret diminta dari pengelola HikCentral.</div>
+        <label>Alamat server <input name="hik_host" placeholder="https://hcp.contoh.go.id:443"></label>
+        <label>AppKey <input name="hik_app_key"></label>
+        <label>AppSecret <input name="hik_app_secret" type="password" autocomplete="new-password"></label>
+        <label class="check" style="margin-top:10px"><input type="checkbox" name="hik_insecure"> Izinkan sertifikat HTTPS self-signed</label>
+        <div class="buttons" style="margin-top:14px; display:flex; gap:8px; align-items:center">
+          <button class="primary">Simpan</button>
+          <button type="button" id="hikTest">Tes koneksi</button>
+          <span class="muted" id="hikTestResult"></span>
+        </div>
+      </form>
+      <form class="card settings-card" id="guestForm">
+        <h3>Tampilan tanpa login (monitor)</h3>
+        <div class="muted">Halaman utama langsung menampilkan CCTV &amp; View yang <b>dibagikan</b>, tanpa login.
+          Login tetap dibutuhkan untuk menyimpan View, PTZ, dan admin. Cocok untuk PC/TV monitor di ruang kontrol.</div>
+        <label class="check" style="margin-top:10px"><input type="checkbox" name="guest_enabled"> Aktifkan tampilan tanpa login</label>
+        <label>Kamera yang boleh dilihat (grup) <select name="guest_group_id"></select></label>
+        <label>Hanya dari IP / subnet (opsional)
+          <input name="guest_ips" placeholder="mis. 10.3.8.0/24, 10.3.4.50 — kosong = semua IP"></label>
+        <div class="hint">⚠ Siapa pun yang bisa membuka alamat aplikasi ini (dan IP-nya diizinkan) bisa melihat kamera grup tersebut.
+          Sebaiknya batasi ke IP PC monitor. Bagikan View dari tampilan live: arahkan ke View, klik <b>○ Bagikan</b>.</div>
+        <div class="buttons" style="margin-top:14px"><button class="primary">Simpan</button></div>
+      </form>
+      <div class="card settings-card">
+        <h3>Status MediaMTX</h3>
+        <div id="mtxStatus" class="muted">-</div>
+      </div>
+    </section>
+
+    <!-- Rekaman (modul opsional) -->
+    <section data-panel="record" hidden>
+      <form class="card settings-card" id="recForm">
+        <h3>Modul rekaman</h3>
+        <div class="muted">Merekam kamera terpilih secara terus-menerus ke hardisk server, seperti NVR. Video disimpan
+          <b>apa adanya</b> (tanpa encode ulang). Kalau hardisk hampir penuh, rekaman <b>paling lama dihapus otomatis</b>.</div>
+        <label class="check" style="margin-top:10px"><input type="checkbox" name="record_enabled"> Aktifkan modul rekaman</label>
+        <label>Folder rekaman <input name="record_path" placeholder="kosong = folder data\recordings di samping aplikasi"></label>
+        <div class="hint">Sebaiknya hardisk terpisah khusus rekaman, mis. <code>D:\CCTV-Rekaman</code>. Pakai hardisk surveillance (WD Purple / SkyHawk).</div>
+        <div class="row">
+          <label>Sisakan ruang minimal (GB) <input name="record_min_free_gb" type="number" min="0"></label>
+          <label>Simpan maksimal (hari, 0 = sampai penuh) <input name="record_max_days" type="number" min="0"></label>
+          <label>Panjang segmen (menit) <input name="record_segment_min" type="number" min="1" max="60"></label>
+        </div>
+        <div class="buttons" style="margin-top:14px"><button class="primary">Simpan</button></div>
+      </form>
+      <div class="card settings-card" id="recStatusCard">
+        <h3>Status hardisk</h3>
+        <div class="disk-bar"><div class="disk-used" id="recDiskUsed"></div><div class="disk-rec" id="recDiskRec"></div></div>
+        <div class="muted" id="recDiskText">-</div>
+      </div>
+      <div class="toolbar">
+        <input type="search" id="recSearch" placeholder="Cari kamera...">
+        <span class="muted" id="recCount"></span>
+        <span style="flex:1"></span>
+        <button data-rec="on">Rekam terpilih</button>
+        <button data-rec="off">Berhenti rekam terpilih</button>
+        <button data-rec="main">Pakai main</button>
+        <button data-rec="sub">Pakai sub</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th class="sel"><input type="checkbox" id="recAll"></th><th>Kamera</th><th>Lokasi</th><th>Rekam</th><th>Kualitas</th><th>Status</th><th>Terpakai</th><th>Rekaman sejak</th></tr></thead>
+          <tbody id="recRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Backup -->
+    <section data-panel="backup" hidden>
+      <div class="card settings-card">
+        <h3>Download backup</h3>
+        <div class="muted">Simpan file backup di tempat aman (flashdisk / drive kantor).
+          File berisi login kamera dan hash password user, jadi jangan dibagikan sembarangan.</div>
+        <div class="backup-grid">
+          <div>
+            <b>List kamera</b>
+            <div class="muted">Semua kamera + grupnya.</div>
+            <div class="buttons-inline">
+              <a class="btn" href="/api/admin/backup/cameras.csv" download>CSV (Excel)</a>
+              <a class="btn" href="/api/admin/backup?parts=cameras" download>JSON</a>
+            </div>
+          </div>
+          <div>
+            <b>List user</b>
+            <div class="muted">Username, peran, grup, izin PTZ, password (terenkripsi).</div>
+            <div class="buttons-inline"><a class="btn" href="/api/admin/backup?parts=users" download>JSON</a></div>
+          </div>
+          <div>
+            <b>Lengkap</b>
+            <div class="muted">Kamera + grup + user dalam satu file.</div>
+            <div class="buttons-inline"><a class="btn primary" href="/api/admin/backup?parts=cameras,users" download>JSON</a></div>
+          </div>
+        </div>
+      </div>
+      <form class="card settings-card" id="restoreForm">
+        <h3>Restore dari backup</h3>
+        <div class="muted">Pilih file backup <code>.json</code>. Data di backup akan <b>ditambahkan / diperbarui</b>;
+          data yang tidak ada di backup <b>tidak dihapus</b>. Sebelum restore, data sekarang otomatis disalin ke folder <code>data\backup</code>.
+          Untuk file CSV kamera, pakai tombol <b>Import CSV</b> di tab Kamera.</div>
+        <label>File backup <input type="file" id="restoreFile" accept=".json,application/json"></label>
+        <div id="restoreInfo" class="muted"></div>
+        <label class="check"><input type="checkbox" id="restoreCams" checked> Restore kamera &amp; grup</label>
+        <label class="check"><input type="checkbox" id="restoreUsers" checked> Restore user</label>
+        <div class="buttons" style="margin-top:14px"><button class="primary" id="restoreBtn" disabled>Restore</button></div>
+      </form>
+    </section>
+  </div>
+
+  <!-- Dialog kamera -->
+  <dialog id="camDialog">
+    <form method="dialog" id="camForm">
+      <h2 id="camDialogTitle">Kamera</h2>
+      <label>Nama <input name="name" required></label>
+      <label>Lokasi <input name="location" list="locList" placeholder="mis. Gudang A"></label>
+      <datalist id="locList"></datalist>
+      <div class="mode-switch">
+        <label class="check"><input type="radio" name="mode" value="dahua" checked> Dahua (IP + channel)</label>
+        <label class="check"><input type="radio" name="mode" value="url"> URL RTSP</label>
+        <label class="check"><input type="radio" name="mode" value="hik"> HikCentral</label>
+      </div>
+      <div id="modeHik" hidden>
+        <label>Kode kamera HikCentral (cameraIndexCode)
+          <input name="hik_code" autocomplete="off" placeholder="mis. 3a1b2c... (lebih mudah lewat Import dari HikCentral)">
+        </label>
+        <div class="hint">URL RTSP diminta otomatis ke HikCentral setiap kali kamera ditonton. Atur server &amp; AppKey di Pengaturan.</div>
+      </div>
+      <div id="modeUrl" hidden>
+        <label>URL main stream (HD)
+          <input name="rtsp_main" autocomplete="off" placeholder="rtsp://user:pass@10.3.4.112:554/cam/realmonitor?channel=1&subtype=0">
+        </label>
+        <label>URL substream (opsional)
+          <input name="rtsp_sub" autocomplete="off" placeholder="kosong = otomatis (subtype=0 → subtype=1)">
+        </label>
+        <div class="hint">Kalau URL tidak berisi user:pass, login default dari Pengaturan yang dipakai.
+          Password yang tersimpan ditampilkan sebagai <code>***</code>; biarkan saja kalau tidak ingin mengubahnya.</div>
+      </div>
+      <div id="modeDahua">
+      <div class="row">
+        <label>IP kamera <input name="ip" required placeholder="192.168.1.10"></label>
+        <div class="row">
+          <label>Port <input name="port" type="number" value="554"></label>
+          <label>Channel <input name="channel" type="number" value="1"></label>
+        </div>
+      </div>
+      <div class="row">
+        <label>Username <input name="username" autocomplete="off" placeholder="(default)"></label>
+        <label>Password <input name="password" type="password" autocomplete="new-password" placeholder="(default)"></label>
+      </div>
+      <div class="hint" id="camPwHint">Kosongkan untuk memakai login default dari Pengaturan.</div>
+      </div>
+      <div class="row ptz-row">
+        <label class="check"><input type="checkbox" name="ptz"> Kamera PTZ (bisa digerakkan)</label>
+        <label id="httpPortLabel">Port HTTP (PTZ) <input name="http_port" type="number" value="80" min="1" max="65535"></label>
+      </div>
+      <label class="check"><input type="checkbox" name="enabled" checked> Aktif</label>
+      <div class="buttons">
+        <button value="cancel" formnovalidate>Batal</button>
+        <button class="primary" value="save">Simpan</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Dialog import -->
+  <dialog id="importDialog" style="width:min(720px, calc(100vw - 32px))">
+    <form method="dialog" id="importForm">
+      <h2>Import kamera dari CSV</h2>
+      <div class="muted">Kolom: <code>nama, lokasi, ip, port, channel, username, password, rtsp, rtsp_sub, grup</code>
+        (opsional: <code>ptz</code> isi 1 untuk kamera PTZ, <code>http_port</code> default 80). <code>port</code> = port RTSP, biasanya 554.
+        Wajib <code>nama</code>, lalu <code>ip</code> (mode Dahua) <b>atau</b> <code>rtsp</code> berisi URL RTSP lengkap. Grup boleh lebih dari satu, pisahkan dengan <code>|</code>.
+        Pemisah koma atau titik koma (Excel) dua-duanya bisa. Kamera dengan IP+port+channel yang sama akan di-update.</div>
+      <label>File CSV <input type="file" id="importFile" accept=".csv,text/csv"></label>
+      <label>atau tempel isinya:</label>
+      <textarea class="csv" id="importText" placeholder="nama,lokasi,ip,port,channel,grup
+Pintu Depan,Lobby,192.168.1.10,554,1,Operasional|Security
+Gudang 1,Gudang,192.168.1.11,,,Operasional"></textarea>
+      <div class="buttons">
+        <button value="cancel" formnovalidate>Batal</button>
+        <button class="primary" value="import">Import</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Dialog tambah NVR -->
+  <dialog id="nvrDialog" style="width:min(860px, calc(100vw - 32px))">
+    <form method="dialog" id="nvrForm" autocomplete="off">
+      <h2>Tambah NVR (semua channel sekaligus)</h2>
+      <div class="muted">Isi alamat &amp; login NVR Dahua, lalu klik <b>Baca channel</b>. Nama kamera diambil langsung dari NVR.
+        Setiap channel yang dicentang menjadi satu kamera.</div>
+      <div class="nvr-login">
+        <label>IP NVR <input name="ip" placeholder="10.5.4.11"></label>
+        <label>Port HTTP <input name="http_port" type="number" value="80"></label>
+        <label>Port RTSP <input name="rtsp_port" type="number" value="554"></label>
+        <label>Username <input name="username" placeholder="(default)"></label>
+        <label>Password <input name="password" type="password" autocomplete="new-password" placeholder="(default)"></label>
+        <button type="button" class="primary" id="nvrScan">Baca channel</button>
+      </div>
+      <div id="nvrInfo" class="muted"></div>
+      <div id="nvrPick" hidden>
+        <div class="toolbar">
+          <input type="search" id="nvrSearch" placeholder="Cari nama / IP kamera...">
+          <label class="check" style="margin:0"><input type="checkbox" id="nvrAll"> Pilih semua</label>
+          <span class="muted" id="nvrCount"></span>
+        </div>
+        <div class="table-wrap nvr-table">
+          <table>
+            <thead><tr><th class="sel"></th><th class="no">Ch</th><th>Nama kamera (bisa diubah)</th><th>IP kamera</th><th>Model</th><th>PTZ</th><th>Status</th></tr></thead>
+            <tbody id="nvrRows"></tbody>
+          </table>
+        </div>
+        <div class="row">
+          <label>Lokasi (folder di sidebar) <input name="location" list="locList" placeholder="mis. ketapang"></label>
+          <label>Masukkan ke grup <select name="group_id"></select></label>
+        </div>
+        <label class="check"><input type="checkbox" name="update_existing"> Channel yang sudah terdaftar: perbarui namanya (kalau tidak dicentang, dilewati)</label>
+      </div>
+      <div class="buttons">
+        <button value="cancel" formnovalidate>Tutup</button>
+        <button class="primary" value="import" id="nvrImportBtn" disabled>Import</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Dialog import HikCentral -->
+  <dialog id="hikDialog" style="width:min(720px, calc(100vw - 32px))">
+    <form method="dialog" id="hikImportForm">
+      <h2>Import kamera dari HikCentral</h2>
+      <div class="toolbar">
+        <input type="search" id="hikSearch" placeholder="Cari kamera...">
+        <label class="check" style="margin:0"><input type="checkbox" id="hikAll"> Pilih semua</label>
+        <span class="muted" id="hikCount"></span>
+      </div>
+      <div class="hik-list" id="hikList"><div class="muted">Memuat daftar kamera...</div></div>
+      <div class="row">
+        <label>Lokasi untuk kamera ini <input name="location" list="locList" placeholder="mis. Pemkab Banyuwangi"></label>
+        <label>Masukkan ke grup <select name="group_id"></select></label>
+      </div>
+      <div class="buttons">
+        <button value="cancel" formnovalidate>Batal</button>
+        <button class="primary" value="import">Import</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Dialog user -->
+  <dialog id="userDialog">
+    <form method="dialog" id="userForm">
+      <h2 id="userDialogTitle">User</h2>
+      <label>Username <input name="username" required autocomplete="off"></label>
+      <label>Password <input name="password" type="password" autocomplete="new-password"></label>
+      <div class="hint" id="userPwHint"></div>
+      <label>Peran
+        <select name="role"><option value="viewer">Viewer (sesuai grup)</option><option value="admin">Admin (semua kamera + pengaturan)</option></select>
+      </label>
+      <label>Grup <select name="group_id"></select></label>
+      <label class="check"><input type="checkbox" name="can_ptz"> Boleh kontrol PTZ (gerakkan kamera)</label>
+      <label class="check"><input type="checkbox" name="monitor"> Mode monitor: hanya tampil CCTV + playlist (tanpa daftar kamera &amp; tombol)</label>
+      <div class="hint">Tanpa centang ini user hanya bisa melihat. Admin selalu boleh.</div>
+      <div class="buttons">
+        <button value="cancel" formnovalidate>Batal</button>
+        <button class="primary" value="save">Simpan</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Dialog ganti password -->
+  <dialog id="pwDialog">
+    <form method="dialog" id="pwForm">
+      <h2>Ganti password</h2>
+      <label>Password lama <input name="current" type="password" required autocomplete="current-password"></label>
+      <label>Password baru <input name="next" type="password" required minlength="6" autocomplete="new-password"></label>
+      <div class="buttons">
+        <button value="cancel" formnovalidate>Batal</button>
+        <button class="primary" value="save">Simpan</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="/js/admin.js"></script>
+</body>
+</html>

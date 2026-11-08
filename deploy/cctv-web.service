@@ -1,0 +1,21 @@
+[Unit]
+Description=CCTV Live View - Web & Backend
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=cctv
+Group=cctv
+WorkingDirectory=/opt/cctv
+ExecStart=/usr/bin/node server/main.js
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/cctv/data
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

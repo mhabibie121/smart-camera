@@ -1,0 +1,45 @@
+# Config MediaMTX khusus TES. Tanpa login, jangan dipakai untuk produksi.
+# Kamera ditambahkan lewat halaman web tes (http://localhost:8090),
+# yang memanggil API MediaMTX. Daftar kamera hilang kalau MediaMTX di-restart.
+
+logLevel: info
+# Log juga ke file (dipantau saat tes P2P)
+logDestinations: [stdout, file]
+logFile: mediamtx-tes.log
+# Lewat relay P2P luar negeri data bisa tersendat; default 10s terlalu cepat memutus
+readTimeout: 30s
+writeTimeout: 30s
+
+authMethod: internal
+authInternalUsers:
+  # Siapa pun boleh menonton (khusus tes)
+  - user: any
+    pass:
+    ips: []
+    permissions:
+      - action: read
+        path:
+  # API hanya dari komputer ini (dipakai lewat proxy di serve.js)
+  - user: any
+    pass:
+    ips: ["127.0.0.1", "::1"]
+    permissions:
+      - action: api
+
+api: true
+apiAddress: 127.0.0.1:9997
+
+# RTSP dinyalakan khusus tes, supaya bisa dibandingkan pakai VLC:
+#   rtsp://localhost:8554/<nama>_main
+rtsp: true
+rtspAddress: :8554
+rtmp: false
+hls: false
+srt: false
+moq: false
+
+webrtc: true
+webrtcAddress: :8889
+webrtcLocalUDPAddress: :8189
+
+paths: {}
